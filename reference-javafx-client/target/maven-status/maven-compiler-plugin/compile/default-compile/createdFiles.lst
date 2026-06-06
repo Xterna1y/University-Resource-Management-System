@@ -1,0 +1,7 @@
+com\campus\client\mcp\CampusMcpClient.class
+com\campus\client\App.class
+com\campus\client\Launcher.class
+com\campus\client\rag\RagService.class
+com\campus\client\rag\RagService$RagResult.class
+com\campus\client\ui\MainView.class
+com\campus\client\llm\AnthropicClient.class
