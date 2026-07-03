@@ -23,6 +23,11 @@ public final class RagService {
 
     /** Bundles the answer with the context used, so the UI can show how the answer was grounded. */
     public record RagResult(String retrievedContext, String systemPrompt, String answer) {
+
+        public String context() {
+            // TODO Auto-generated method stub
+            throw new UnsupportedOperationException("Unimplemented method 'context'");
+        }
     }
 
     private final CampusMcpClient mcp;
