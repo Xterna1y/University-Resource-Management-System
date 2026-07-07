@@ -8,6 +8,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.HBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
@@ -35,11 +36,20 @@ public class AvailableView extends BorderPane {
     private final DatePicker datePicker = new DatePicker(LocalDate.now());
     private final TextField buildingField = new TextField();
     private final Button checkButton = new Button("Check Availability");
-    private final TextArea resultsArea = new TextArea();
+    private final ListView<String> availabilityList = new ListView<>();
+
+    private final Label facilityIdLabel = new Label("-");
+    private final Label facilityTypeLabel = new Label("-");
+    private final Label capacityLabel = new Label("-");
+    private final Label buildingLabel = new Label("-");
+
+    // Selected facility information
+    private String selectedResourceId = "";
+    private String selectedFacilityName = "";
 
     private final TextField resourceIdField = new TextField();
     private final TextField facilityNameField = new TextField();
-    private final Button proceedButton = new Button("Proceed to Booking");
+    private final Button proceedButton = new Button("Book This Slot");
     private final Button backButton = new Button("Back to Facilities");
     private final Label statusLabel = new Label();
 
@@ -59,9 +69,61 @@ public class AvailableView extends BorderPane {
             // Use the first line of the selected facility block as a starting guess for the name.
             String firstLine = prefillFacilityText.split("\\n")[0].trim();
             facilityNameField.setText(firstLine);
+            facilityIdLabel.setText("From MCP");
+            facilityTypeLabel.setText("Facility");
+            capacityLabel.setText("See availability");
+            buildingLabel.setText(
+                    buildingField.getText().isBlank()
+                            ? "-"
+                            : buildingField.getText());
         }
 
         checkButton.setOnAction(e -> handleCheck());
+        availabilityList.getSelectionModel().selectedItemProperty().addListener(
+                (obs, oldValue, newValue) -> {
+
+                    if (newValue == null) {
+                        return;
+                    }
+
+                    // Save selection
+                    selectedFacilityName = facilityNameField.getText();
+                    selectedResourceId = "AUTO";
+
+                    // Update the details panel
+                    facilityIdLabel.setText(selectedResourceId);
+                    buildingLabel.setText(
+                            buildingField.getText().isBlank()
+                                    ? "Unknown"
+                                    : buildingField.getText());
+
+                    // Guess facility type
+                    String lower = selectedFacilityName.toLowerCase();
+
+                    if (lower.contains("discussion")) {
+                        facilityTypeLabel.setText("Discussion Room");
+                        capacityLabel.setText("6");
+                    }
+                    else if (lower.contains("computer")) {
+                        facilityTypeLabel.setText("Computer Lab");
+                        capacityLabel.setText("30");
+                    }
+                    else if (lower.contains("study")) {
+                        facilityTypeLabel.setText("Study Pod");
+                        capacityLabel.setText("2");
+                    }
+                    else if (lower.contains("basket")
+                            || lower.contains("court")
+                            || lower.contains("sport")) {
+
+                        facilityTypeLabel.setText("Sports Facility");
+                        capacityLabel.setText("20");
+                    }
+                    else {
+                        facilityTypeLabel.setText("Facility");
+                        capacityLabel.setText("-");
+                    }
+                });
     }
 
     public void setOnProceedToBooking(BiConsumer<String, String> callback) { this.onProceedToBooking = callback; }
@@ -76,34 +138,51 @@ public class AvailableView extends BorderPane {
     }
 
     private VBox buildBody() {
-        GridPane form = new GridPane();
-        form.setHgap(10);
-        form.setVgap(10);
+
+        GridPane searchPane = new GridPane();
+        searchPane.setHgap(10);
+        searchPane.setVgap(10);
+
         buildingField.setPromptText("Building (optional)");
-        form.addRow(0, new Label("Date:"), datePicker);
-        form.addRow(1, new Label("Building:"), buildingField);
-        form.add(checkButton, 1, 2);
 
-        resultsArea.setEditable(false);
-        resultsArea.setWrapText(true);
-        resultsArea.setPrefRowCount(10);
-        resultsArea.setPromptText("Availability results will appear here.");
+        searchPane.addRow(0,
+                new Label("Date:"),
+                datePicker);
 
-        GridPane proceedForm = new GridPane();
-        proceedForm.setHgap(10);
-        proceedForm.setVgap(10);
-        proceedForm.setPadding(new Insets(10, 0, 0, 0));
-        resourceIdField.setPromptText("e.g. HC-01 (from the results above)");
-        facilityNameField.setPromptText("e.g. Harapan Discussion Room 1");
-        proceedForm.addRow(0, new Label("Resource ID:"), resourceIdField);
-        proceedForm.addRow(1, new Label("Facility Name:"), facilityNameField);
+        searchPane.addRow(1,
+                new Label("Building:"),
+                buildingField);
 
-        Label hint = new Label("Read the Resource ID from the results above, then enter it here to book.");
-        hint.setWrapText(true);
-        hint.setStyle("-fx-text-fill: #666666; -fx-font-size: 11px;");
+        searchPane.add(checkButton,1,2);
 
-        VBox box = new VBox(15, form, resultsArea, hint, proceedForm);
-        return box;
+        availabilityList.setPrefHeight(350);
+
+        VBox left = new VBox(10,
+                new Label("Available Time Slots"),
+                availabilityList);
+
+        GridPane details = new GridPane();
+
+        details.setHgap(10);
+        details.setVgap(10);
+
+        details.addRow(0,new Label("Facility ID:"),facilityIdLabel);
+        details.addRow(1,new Label("Type:"),facilityTypeLabel);
+        details.addRow(2,new Label("Capacity:"),capacityLabel);
+        details.addRow(3,new Label("Building:"),buildingLabel);
+
+        TitledPane infoPane = new TitledPane();
+        infoPane.setText("Facility Details");
+        infoPane.setContent(details);
+        infoPane.setExpanded(true);
+
+        HBox content = new HBox(20,left,infoPane);
+
+        VBox page = new VBox(20);
+
+        page.getChildren().addAll(searchPane,content);
+
+        return page;
     }
 
     private javafx.scene.layout.HBox buildActions() {
@@ -137,7 +216,21 @@ public class AvailableView extends BorderPane {
                 String result = mcpClient.callTool("check_room_availability", args);
 
                 Platform.runLater(() -> {
-                    resultsArea.setText(result);
+                    availabilityList.getItems().clear();
+                    String[] lines = result.split("\\n");
+                    for (String line : lines) {
+                        if (!line.isBlank()) {
+                            if (line.toLowerCase().contains("available")) {
+                                availabilityList.getItems().add("🟢 " + line);
+                            }
+                            else if (line.toLowerCase().contains("booked")) {
+                                availabilityList.getItems().add("🔴 " + line);
+                            }
+                            else {
+                                availabilityList.getItems().add(line);
+                            }
+                        }
+                    }
                     statusLabel.setText("");
                     checkButton.setDisable(false);
                 });
@@ -151,11 +244,11 @@ public class AvailableView extends BorderPane {
     }
 
     private void handleProceed() {
-        String resourceId = resourceIdField.getText().trim();
-        String facilityName = facilityNameField.getText().trim();
+        String resourceId = selectedResourceId;
+        String facilityName = selectedFacilityName;
 
-        if (resourceId.isEmpty() || facilityName.isEmpty()) {
-            statusLabel.setText("Please enter both Resource ID and Facility Name.");
+        if (availabilityList.getSelectionModel().getSelectedItem() == null) {
+            statusLabel.setText("Please select an available time slot.");
             return;
         }
         if (onProceedToBooking != null) {

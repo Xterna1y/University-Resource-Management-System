@@ -56,37 +56,113 @@ public class FaciView extends BorderPane {
     public void setOnBack(Runnable r) { this.onBack = r; }
 
     private VBox buildHeader() {
-        Label title = new Label("Campus Facilities");
-        title.setFont(Font.font("System", FontWeight.BOLD, 20));
 
-        searchField.setPromptText("Search by name, building, or type...");
-        searchField.textProperty().addListener((o, a, b) -> applyFilter(b));
+        Label title = new Label("Browse Campus Facilities");
+        title.setFont(Font.font("System", FontWeight.BOLD, 22));
 
-        VBox box = new VBox(10, title, searchField);
-        box.setPadding(new Insets(0, 0, 15, 0));
+        Label subtitle = new Label("Search and select a facility to check its availability.");
+        subtitle.setStyle("-fx-text-fill:#666666;");
+
+        searchField.setPromptText("Search by facility name, building or type...");
+        searchField.textProperty().addListener((o, oldVal, newVal) -> applyFilter(newVal));
+
+        VBox box = new VBox(8);
+        box.getChildren().addAll(title, subtitle, searchField);
+        box.setPadding(new Insets(0,0,15,0));
+
         return box;
     }
 
     private VBox buildBody() {
+
         resultsList.setPlaceholder(new Label("Loading facilities..."));
-        VBox box = new VBox(10, resultsList);
+
+        resultsList.setPrefHeight(420);
+
+        resultsList.setCellFactory(list -> new ListCell<>() {
+
+            @Override
+            protected void updateItem(String item, boolean empty) {
+
+                super.updateItem(item, empty);
+
+                if (empty || item == null) {
+                    setGraphic(null);
+                    return;
+                }
+
+                VBox card = new VBox(6);
+                card.setPadding(new Insets(10));
+
+                card.setStyle(
+                        "-fx-background-color:white;" +
+                                "-fx-border-color:#DDDDDD;" +
+                                "-fx-border-radius:5;" +
+                                "-fx-background-radius:5;"
+                );
+
+                String[] lines = item.split("\\n");
+
+                Label title = new Label(lines.length > 0 ? lines[0] : "");
+                title.setFont(Font.font("System", FontWeight.BOLD, 15));
+
+                Label details = new Label(item);
+                details.setWrapText(true);
+                details.setStyle("-fx-text-fill:#555555;");
+
+                card.getChildren().addAll(title, details);
+
+                setGraphic(card);
+            }
+        });
+
+        VBox box = new VBox(10);
+        box.getChildren().add(resultsList);
+
         return box;
     }
 
     private HBox buildActions() {
+
+        checkAvailabilityButton.setPrefWidth(170);
+        backButton.setPrefWidth(120);
+
+        checkAvailabilityButton.setStyle(
+                "-fx-background-color:#c62828;" +
+                        "-fx-text-fill:white;" +
+                        "-fx-font-weight:bold;"
+        );
+
+        backButton.setStyle(
+                "-fx-background-color:#eeeeee;"
+        );
+
         checkAvailabilityButton.setOnAction(e -> {
+
             String selected = resultsList.getSelectionModel().getSelectedItem();
-            if (selected != null && onCheckAvailability != null) {
+
+            if (selected == null) {
+                statusLabel.setText("Please select a facility.");
+                return;
+            }
+
+            if (onCheckAvailability != null) {
                 onCheckAvailability.accept(selected);
-            } else if (selected == null) {
-                statusLabel.setText("Select a facility first.");
             }
         });
-        backButton.setOnAction(e -> { if (onBack != null) onBack.run(); });
 
-        HBox box = new HBox(10, checkAvailabilityButton, backButton, statusLabel);
-        box.setPadding(new Insets(15, 0, 0, 0));
-        return box;
+        backButton.setOnAction(e -> {
+            if (onBack != null)
+                onBack.run();
+        });
+
+        HBox buttons = new HBox(10, checkAvailabilityButton, backButton);
+        buttons.setPadding(new Insets(15,0,0,0));
+
+        VBox wrapper = new VBox(8);
+        wrapper.getChildren().addAll(buttons, statusLabel);
+
+        return new HBox(wrapper);
     }
 
     private void loadFacilities() {
