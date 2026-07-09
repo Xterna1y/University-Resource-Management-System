@@ -58,16 +58,11 @@ public final class App extends Application {
 
             // The LLM is optional: discovery and direct tool calls work without an API key.
             RagService rag = null;
-            String apiKey = firstNonBlank(System.getProperty("anthropic.apiKey"),
-                    System.getenv("ANTHROPIC_API_KEY"), null);
+            String apiKey = "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";
             String llmNote;
-            if (apiKey != null) {
-                String model = firstNonBlank(System.getProperty("anthropic.model"), DEFAULT_MODEL);
-                rag = new RagService(mcp, new AnthropicClient(apiKey, model, 1024));
-                llmNote = "LLM: " + model;
-            } else {
-                llmNote = "LLM: disabled (set ANTHROPIC_API_KEY to enable the RAG tab)";
-            }
+            String model = firstNonBlank(System.getProperty("anthropic.model"), DEFAULT_MODEL);
+            rag = new RagService(mcp, new AnthropicClient(apiKey, model, 1024));
+            llmNote = "LLM: " + model;
 
             final RagService ragFinal = rag;
             Platform.runLater(() -> {

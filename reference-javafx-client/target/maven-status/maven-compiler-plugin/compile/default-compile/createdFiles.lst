@@ -1,9 +1,14 @@
 com\campus\client\model\SportsFacility.class
 com\campus\client\services\rag\RagService.class
+com\campus\client\ui\pages\booking\BHistory$1.class
+com\campus\client\ui\pages\booking\BHistory$Filter.class
 com\campus\client\model\Booking$Status.class
 com\campus\client\data\UserStorage.class
 com\campus\client\ui\components\Header.class
+com\campus\client\ui\pages\assistant\AssistantView$ChatBubbleCell.class
 com\campus\client\model\DiscussionRoom.class
+com\campus\client\ui\components\Theme.class
+com\campus\client\ui\pages\facilities\FaciView$FacilityRow.class
 com\campus\client\ui\MainView.class
 com\campus\client\ui\pages\facilities\AvailableView.class
 com\campus\client\services\rag\RagResult.class
@@ -11,7 +16,9 @@ com\campus\client\App.class
 com\campus\client\ui\pages\login\RegisterPage.class
 com\campus\client\model\StudyPod.class
 com\campus\client\ui\pages\login\LoginPage.class
+com\campus\client\ui\pages\booking\BHistory$2.class
 com\campus\client\services\rag\RagService$RagResult.class
+com\campus\client\ui\pages\assistant\AssistantView$ChatMessage.class
 com\campus\client\ui\pages\assistant\AssistantView.class
 com\campus\client\ui\pages\booking\BookingView.class
 com\campus\client\ui\components\NavBar.class

@@ -128,6 +128,7 @@ public class MainView {
     }
 
     private void showFacilities() {
+        System.out.println("Facilities button clicked");
         requireLogin();
         if (mcp == null) {
             setStatus("Still connecting to the campus server, please wait a moment and try again.");

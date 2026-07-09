@@ -3,6 +3,7 @@ package com.campus.client.ui.pages.booking;
 import com.campus.client.data.BookingStorage;
 import com.campus.client.model.Booking;
 import com.campus.client.services.mcp.CampusMcpClient;
+import com.campus.client.ui.components.Theme;
 
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -24,13 +25,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * BookingView - lets a student confirm a booking for a facility that was
- * selected on AvailabilityView (Member 2's screen), then submits it through
- * the MCP "book_resource" tool and records it locally via BookingStorage.
- *
- * Covers FR07 (view summary before confirming) and FR08 (submit booking),
- * and Table 25 of the design report (Purpose, Number of People, Confirm,
- * Cancel).
+ * BookingView - same booking logic as before (validate(), book_resource
+ * call on a background thread, BookingStorage.save()). This pass only
+ * restyles the layout into the mockup's two-column Booking Details /
+ * Booking Summary composition.
  */
 public class BookingView extends BorderPane {
 
@@ -41,7 +39,6 @@ public class BookingView extends BorderPane {
     private final BookingStorage bookingStorage;
     private final String studentId;
 
-    // Pre-filled context (usually supplied by AvailabilityView)
     private final String resourceId;
     private final String facilityName;
 
@@ -52,7 +49,10 @@ public class BookingView extends BorderPane {
     private final TextField purposeField = new TextField();
     private final TextField numberOfPeopleField = new TextField();
 
-    private final Label summaryLabel = new Label();
+    private final Label summaryFacility = new Label();
+    private final Label summaryDate = new Label();
+    private final Label summaryTime = new Label();
+    private final Label summaryPurpose = new Label();
     private final Label statusLabel = new Label();
     private final Button confirmBookingButton = new Button("Confirm Booking");
     private final Button cancelButton = new Button("Cancel");
@@ -70,14 +70,13 @@ public class BookingView extends BorderPane {
         this.facilityName = facilityName;
 
         setPadding(new Insets(20));
+        setStyle("-fx-background-color:" + Theme.GREY_BG + ";");
         setTop(buildHeader());
-        setCenter(buildForm());
-        setBottom(buildActions());
+        setCenter(buildBody());
 
         resourceField.setText(facilityName);
         resourceField.setEditable(false);
 
-        // Keep the summary in sync as the student edits the form.
         datePicker.valueProperty().addListener((o, a, b) -> refreshSummary());
         startTimeField.textProperty().addListener((o, a, b) -> refreshSummary());
         endTimeField.textProperty().addListener((o, a, b) -> refreshSummary());
@@ -94,16 +93,39 @@ public class BookingView extends BorderPane {
     public void setOnBackToAvailability(Runnable r) { this.onBackToAvailability = r; }
     public void setOnBookingConfirmed(Runnable r) { this.onBookingConfirmed = r; }
 
-    private Node buildHeader() {
-        Label title = new Label("Book a Facility");
-        title.setFont(Font.font("System", FontWeight.BOLD, 20));
-        return title;
+    private VBox buildHeader() {
+        Label back = new Label("\u2190 Back to Availability");
+        back.setStyle("-fx-text-fill:" + Theme.DARK + "; -fx-cursor: hand;");
+        back.setOnMouseClicked(e -> { if (onBackToAvailability != null) onBackToAvailability.run(); });
+
+        Label title = new Label("Book Resource");
+        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 20));
+
+        Label subtitle = new Label("Review your booking details");
+        subtitle.setStyle("-fx-text-fill:" + Theme.TEXT_MUTED + ";");
+
+        VBox box = new VBox(6, back, title, subtitle);
+        box.setPadding(new Insets(0, 0, 15, 0));
+        return box;
     }
 
-    private Node buildForm() {
+    /** Two-column layout: Booking Details form (left) + read-only Booking Summary card (right). */
+    private HBox buildBody() {
+        VBox detailsCard = buildDetailsCard();
+        VBox summaryCard = buildSummaryCard();
+
+        HBox.setHgrow(detailsCard, Priority.ALWAYS);
+        HBox row = new HBox(20, detailsCard, summaryCard);
+        return row;
+    }
+
+    private VBox buildDetailsCard() {
+        Label cardTitle = new Label("Booking Details");
+        cardTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+
         GridPane grid = new GridPane();
         grid.setHgap(10);
-        grid.setVgap(10);
+        grid.setVgap(12);
         grid.setPadding(new Insets(15, 0, 15, 0));
 
         int row = 0;
@@ -115,11 +137,11 @@ public class BookingView extends BorderPane {
         grid.addRow(row++, new Label("Start Time:"), startTimeField);
         grid.addRow(row++, new Label("End Time:"), endTimeField);
 
-        purposeField.setPromptText("e.g. Group project discussion");
+        purposeField.setPromptText("e.g. Group project discussion (optional)");
         grid.addRow(row++, new Label("Purpose:"), purposeField);
 
         numberOfPeopleField.setPromptText("e.g. 4");
-        grid.addRow(row++, new Label("Number of People:"), numberOfPeopleField);
+        grid.addRow(row++, new Label("No. of People:"), numberOfPeopleField);
 
         for (Node n : grid.getChildren()) {
             if (n instanceof TextField || n instanceof DatePicker) {
@@ -128,39 +150,62 @@ public class BookingView extends BorderPane {
             }
         }
 
-        VBox summaryBox = new VBox(5);
-        summaryBox.setPadding(new Insets(10));
-        summaryBox.setStyle("-fx-background-color: #f4f4f4; -fx-background-radius: 6;");
-        Label summaryTitle = new Label("Booking Summary");
-        summaryTitle.setFont(Font.font("System", FontWeight.BOLD, 13));
-        summaryLabel.setWrapText(true);
-        summaryBox.getChildren().addAll(summaryTitle, summaryLabel);
+        confirmBookingButton.setStyle(Theme.primaryButton());
+        cancelButton.setStyle(Theme.secondaryButton());
+        statusLabel.setWrapText(true);
 
-        VBox container = new VBox(15, grid, summaryBox);
-        return container;
+        HBox actions = new HBox(10, confirmBookingButton, cancelButton);
+        actions.setAlignment(Pos.CENTER_LEFT);
+
+        VBox card = new VBox(10, cardTitle, grid, actions, statusLabel);
+        card.setPadding(new Insets(20));
+        card.setStyle(Theme.card());
+        return card;
     }
 
-    private Node buildActions() {
-        HBox box = new HBox(10, confirmBookingButton, cancelButton, statusLabel);
-        box.setAlignment(Pos.CENTER_LEFT);
-        box.setPadding(new Insets(15, 0, 0, 0));
-        statusLabel.setWrapText(true);
-        return box;
+    private VBox buildSummaryCard() {
+        Label cardTitle = new Label("Booking Summary");
+        cardTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(10, 0, 0, 0));
+
+        summaryFacility.setWrapText(true);
+        summaryDate.setWrapText(true);
+        summaryTime.setWrapText(true);
+        summaryPurpose.setWrapText(true);
+
+        grid.addRow(0, boldLabel("Facility"), summaryFacility);
+        grid.addRow(1, boldLabel("Date"), summaryDate);
+        grid.addRow(2, boldLabel("Time"), summaryTime);
+        grid.addRow(3, boldLabel("Purpose"), summaryPurpose);
+
+        VBox card = new VBox(10, cardTitle, grid);
+        card.setPadding(new Insets(20));
+        card.setStyle(Theme.card());
+        card.setPrefWidth(280);
+        card.setMinWidth(240);
+        return card;
+    }
+
+    private Label boldLabel(String text) {
+        Label l = new Label(text);
+        l.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+        return l;
     }
 
     private void refreshSummary() {
-        summaryLabel.setText(String.format(
-                "Facility: %s%nDate: %s%nTime: %s - %s%nPurpose: %s%nPeople: %s",
-                facilityName,
-                datePicker.getValue() == null ? "-" : datePicker.getValue(),
-                startTimeField.getText().isBlank() ? "-" : startTimeField.getText(),
-                endTimeField.getText().isBlank() ? "-" : endTimeField.getText(),
-                purposeField.getText().isBlank() ? "-" : purposeField.getText(),
-                numberOfPeopleField.getText().isBlank() ? "-" : numberOfPeopleField.getText()
-        ));
+        summaryFacility.setText(facilityName);
+        summaryDate.setText(datePicker.getValue() == null ? "-" : datePicker.getValue().toString());
+        String start = startTimeField.getText().isBlank() ? "-" : startTimeField.getText();
+        String end = endTimeField.getText().isBlank() ? "-" : endTimeField.getText();
+        summaryTime.setText(start + " - " + end);
+        summaryPurpose.setText(purposeField.getText().isBlank() ? "-" : purposeField.getText());
     }
 
-    /** FR08: validate input, then call the book_resource MCP tool on a background thread. */
+    /** Same booking submission logic as before: validate, call book_resource, then persist locally. */
     private void handleConfirmBooking() {
         String error = validate();
         if (error != null) {
@@ -208,7 +253,6 @@ public class BookingView extends BorderPane {
         });
     }
 
-    /** Pulls a reference like "BK-1023" out of the tool's free-text reply, or falls back to a local id. */
     private String extractBookingReference(String toolResultText) {
         if (toolResultText != null) {
             Matcher m = BOOKING_REF_PATTERN.matcher(toolResultText);

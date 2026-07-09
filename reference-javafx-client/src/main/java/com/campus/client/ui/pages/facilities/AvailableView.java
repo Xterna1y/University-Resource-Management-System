@@ -47,8 +47,6 @@ public class AvailableView extends BorderPane {
     private String selectedResourceId = "";
     private String selectedFacilityName = "";
 
-    private final TextField resourceIdField = new TextField();
-    private final TextField facilityNameField = new TextField();
     private final Button proceedButton = new Button("Book This Slot");
     private final Button backButton = new Button("Back to Facilities");
     private final Label statusLabel = new Label();
@@ -67,63 +65,46 @@ public class AvailableView extends BorderPane {
 
         if (prefillFacilityText != null && !prefillFacilityText.isBlank()) {
             // Use the first line of the selected facility block as a starting guess for the name.
-            String firstLine = prefillFacilityText.split("\\n")[0].trim();
-            facilityNameField.setText(firstLine);
-            facilityIdLabel.setText("From MCP");
-            facilityTypeLabel.setText("Facility");
-            capacityLabel.setText("See availability");
-            buildingLabel.setText(
-                    buildingField.getText().isBlank()
-                            ? "-"
-                            : buildingField.getText());
+            facilityIdLabel.setText("-");
+            facilityTypeLabel.setText("-");
+            capacityLabel.setText("-");
+            buildingLabel.setText("-");
         }
 
         checkButton.setOnAction(e -> handleCheck());
         availabilityList.getSelectionModel().selectedItemProperty().addListener(
                 (obs, oldValue, newValue) -> {
 
-                    if (newValue == null) {
-                        return;
-                    }
+            System.out.println("Clicked = " + newValue);
 
-                    // Save selection
-                    selectedFacilityName = facilityNameField.getText();
-                    selectedResourceId = "AUTO";
+            if (newValue == null)
+                return;
 
-                    // Update the details panel
-                    facilityIdLabel.setText(selectedResourceId);
-                    buildingLabel.setText(
-                            buildingField.getText().isBlank()
-                                    ? "Unknown"
-                                    : buildingField.getText());
+            String line = newValue
+                    .replace("🟢", "")
+                    .replace("🔴", "")
+                    .trim();
 
-                    // Guess facility type
-                    String lower = selectedFacilityName.toLowerCase();
+            System.out.println(line);
 
-                    if (lower.contains("discussion")) {
-                        facilityTypeLabel.setText("Discussion Room");
-                        capacityLabel.setText("6");
-                    }
-                    else if (lower.contains("computer")) {
-                        facilityTypeLabel.setText("Computer Lab");
-                        capacityLabel.setText("30");
-                    }
-                    else if (lower.contains("study")) {
-                        facilityTypeLabel.setText("Study Pod");
-                        capacityLabel.setText("2");
-                    }
-                    else if (lower.contains("basket")
-                            || lower.contains("court")
-                            || lower.contains("sport")) {
+            String[] parts = line.split("\\s+");
 
-                        facilityTypeLabel.setText("Sports Facility");
-                        capacityLabel.setText("20");
-                    }
-                    else {
-                        facilityTypeLabel.setText("Facility");
-                        capacityLabel.setText("-");
-                    }
-                });
+            System.out.println("Length = " + parts.length);
+
+            for (int i = 0; i < parts.length; i++) {
+                System.out.println(i + " = " + parts[i]);
+            }
+
+            if (parts.length >= 5) {
+                selectedResourceId = parts[0];
+                selectedFacilityName = parts[1];
+
+                facilityIdLabel.setText(selectedResourceId);
+                facilityTypeLabel.setText(selectedFacilityName);
+                capacityLabel.setText(parts[3]);
+                buildingLabel.setText(parts[4]);
+            }
+        });
     }
 
     public void setOnProceedToBooking(BiConsumer<String, String> callback) { this.onProceedToBooking = callback; }
@@ -219,16 +200,20 @@ public class AvailableView extends BorderPane {
                     availabilityList.getItems().clear();
                     String[] lines = result.split("\\n");
                     for (String line : lines) {
-                        if (!line.isBlank()) {
-                            if (line.toLowerCase().contains("available")) {
-                                availabilityList.getItems().add("🟢 " + line);
-                            }
-                            else if (line.toLowerCase().contains("booked")) {
-                                availabilityList.getItems().add("🔴 " + line);
-                            }
-                            else {
-                                availabilityList.getItems().add(line);
-                            }
+
+                        line = line.trim();
+
+                        if (line.isBlank())
+                            continue;
+
+                        if (line.startsWith("Availability"))
+                            continue;
+
+                        if (line.contains("-> free")) {
+                            availabilityList.getItems().add("🟢 " + line);
+                        }
+                        else {
+                            availabilityList.getItems().add("🔴 " + line);
                         }
                     }
                     statusLabel.setText("");
@@ -243,14 +228,34 @@ public class AvailableView extends BorderPane {
         });
     }
 
-    private void handleProceed() {
-        String resourceId = selectedResourceId;
-        String facilityName = selectedFacilityName;
+   private void handleProceed() {
 
-        if (availabilityList.getSelectionModel().getSelectedItem() == null) {
-            statusLabel.setText("Please select an available time slot.");
+        String selected = availabilityList.getSelectionModel().getSelectedItem();
+
+        if (selected == null) {
+            statusLabel.setText("Please select a facility.");
             return;
         }
+
+        if (selected.contains("HAS BOOKING")) {
+            statusLabel.setText("This resource is already booked.");
+            return;
+        }
+
+        selected = selected.replace("🟢", "")
+                        .replace("🔴", "")
+                        .trim();
+
+        String[] parts = selected.split("\\s+");
+
+        if (parts.length < 5) {
+            statusLabel.setText("Invalid facility information.");
+            return;
+        }
+
+        String resourceId = parts[0];
+        String facilityName = parts[1];
+
         if (onProceedToBooking != null) {
             onProceedToBooking.accept(resourceId, facilityName);
         }
