@@ -103,14 +103,33 @@ public class FaciView extends BorderPane {
 
                 String[] lines = item.split("\\n");
 
-                Label title = new Label(lines.length > 0 ? lines[0] : "");
+                String firstLine = lines.length > 0 ? lines[0] : "";
+
+                String icon = "🏢";
+
+                String lower = firstLine.toLowerCase();
+
+                if (lower.contains("computer"))
+                    icon = "💻";
+                else if (lower.contains("discussion"))
+                    icon = "👥";
+                else if (lower.contains("study"))
+                    icon = "📖";
+                else if (lower.contains("sport"))
+                    icon = "🏀";
+
+                Label title = new Label(icon + " " + firstLine);
                 title.setFont(Font.font("System", FontWeight.BOLD, 15));
 
-                Label details = new Label(item);
-                details.setWrapText(true);
-                details.setStyle("-fx-text-fill:#555555;");
+                VBox detailsBox = new VBox(2);
 
-                card.getChildren().addAll(title, details);
+                for (int i = 1; i < lines.length; i++) {
+                    Label l = new Label(lines[i]);
+                    l.setStyle("-fx-text-fill:#555555;");
+                    detailsBox.getChildren().add(l);
+                }
+
+                card.getChildren().addAll(title, detailsBox);
 
                 setGraphic(card);
             }
