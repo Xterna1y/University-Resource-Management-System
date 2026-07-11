@@ -22,7 +22,6 @@ public class NavBar extends VBox {
     private final Button facilitiesButton = createButton("Facilities");
     private final Button historyButton = createButton("Bookings");
     private final Button assistantButton = createButton("Assistant");
-    private final Button profileButton = createButton("Profile");
     private final Button logoutButton = createButton("Logout");
 
     public NavBar() {
@@ -56,7 +55,6 @@ public class NavBar extends VBox {
                 facilitiesButton,
                 historyButton,
                 assistantButton,
-                profileButton,
                 spacer,
                 logoutButton
         );

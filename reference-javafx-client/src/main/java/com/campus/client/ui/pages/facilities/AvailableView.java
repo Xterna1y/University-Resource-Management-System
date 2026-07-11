@@ -2,6 +2,7 @@ package com.campus.client.ui.pages.facilities;
 
 import com.campus.client.services.mcp.CampusMcpClient;
 
+import com.campus.client.ui.components.Theme;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
@@ -38,226 +39,393 @@ public class AvailableView extends BorderPane {
     private final Button checkButton = new Button("Check Availability");
     private final ListView<String> availabilityList = new ListView<>();
 
+    // Facility Details
     private final Label facilityIdLabel = new Label("-");
     private final Label facilityTypeLabel = new Label("-");
     private final Label capacityLabel = new Label("-");
     private final Label buildingLabel = new Label("-");
 
-    // Selected facility information
+    // Selected facility
     private String selectedResourceId = "";
     private String selectedFacilityName = "";
 
-    private final Button proceedButton = new Button("Book This Slot");
-    private final Button backButton = new Button("Back to Facilities");
+    private final Button proceedButton = new Button("Continue to Booking");
+    private final Button backButton = new Button("Back");
     private final Label statusLabel = new Label();
 
-    private BiConsumer<String, String> onProceedToBooking; // (resourceId, facilityName)
+    private BiConsumer<String, String> onProceedToBooking;
     private Runnable onBack;
 
-    public AvailableView(CampusMcpClient mcpClient, ExecutorService worker, String prefillFacilityText) {
+    public AvailableView(CampusMcpClient mcpClient,
+                         ExecutorService worker,
+                         String prefillFacilityText) {
+
         this.mcpClient = mcpClient;
         this.worker = worker;
 
         setPadding(new Insets(20));
+        setStyle("-fx-background-color:" + Theme.GREY_BG + ";");
+
         setTop(buildHeader());
         setCenter(buildBody());
         setBottom(buildActions());
 
+        // Store the facility selected from the previous page
         if (prefillFacilityText != null && !prefillFacilityText.isBlank()) {
-            // Use the first line of the selected facility block as a starting guess for the name.
-            facilityIdLabel.setText("-");
-            facilityTypeLabel.setText("-");
+
+            selectedFacilityName = prefillFacilityText.split("\\n")[0].trim();
+
+            facilityIdLabel.setText("AUTO");
+            facilityTypeLabel.setText("Facility");
             capacityLabel.setText("-");
             buildingLabel.setText("-");
         }
 
         checkButton.setOnAction(e -> handleCheck());
+
         availabilityList.getSelectionModel().selectedItemProperty().addListener(
                 (obs, oldValue, newValue) -> {
 
-            System.out.println("Clicked = " + newValue);
+                    if (newValue == null) {
+                        return;
+                    }
 
-            if (newValue == null)
-                return;
+                    selectedResourceId = "AUTO";
 
-            String line = newValue
-                    .replace("🟢", "")
-                    .replace("🔴", "")
-                    .trim();
+                    facilityIdLabel.setText(selectedResourceId);
 
-            System.out.println(line);
+                    buildingLabel.setText(
+                            buildingField.getText().isBlank()
+                                    ? "Unknown"
+                                    : buildingField.getText()
+                    );
 
-            String[] parts = line.split("\\s+");
+                    String lower = selectedFacilityName.toLowerCase();
 
-            System.out.println("Length = " + parts.length);
+                    if (lower.contains("discussion")) {
+                        facilityTypeLabel.setText("Discussion Room");
+                        capacityLabel.setText("6");
+                    } else if (lower.contains("computer")) {
+                        facilityTypeLabel.setText("Computer Lab");
+                        capacityLabel.setText("30");
+                    } else if (lower.contains("study")) {
+                        facilityTypeLabel.setText("Study Pod");
+                        capacityLabel.setText("2");
+                    } else if (lower.contains("basket")
+                            || lower.contains("court")
+                            || lower.contains("sport")) {
 
-            for (int i = 0; i < parts.length; i++) {
-                System.out.println(i + " = " + parts[i]);
-            }
-
-            if (parts.length >= 5) {
-                selectedResourceId = parts[0];
-                selectedFacilityName = parts[1];
-
-                facilityIdLabel.setText(selectedResourceId);
-                facilityTypeLabel.setText(selectedFacilityName);
-                capacityLabel.setText(parts[3]);
-                buildingLabel.setText(parts[4]);
-            }
-        });
+                        facilityTypeLabel.setText("Sports Facility");
+                        capacityLabel.setText("20");
+                    } else {
+                        facilityTypeLabel.setText("Facility");
+                        capacityLabel.setText("-");
+                    }
+                });
     }
 
-    public void setOnProceedToBooking(BiConsumer<String, String> callback) { this.onProceedToBooking = callback; }
-    public void setOnBack(Runnable r) { this.onBack = r; }
+    public void setOnProceedToBooking(BiConsumer<String, String> callback) {
+        this.onProceedToBooking = callback;
+    }
+
+    public void setOnBack(Runnable r) {
+        this.onBack = r;
+    }
 
     private VBox buildHeader() {
-        Label title = new Label("Check Room Availability");
-        title.setFont(Font.font("System", FontWeight.BOLD, 20));
-        VBox box = new VBox(10, title);
+
+        Label back = new Label("← Back to Facilities");
+        back.setStyle("-fx-text-fill:" + Theme.DARK + "; -fx-cursor: hand;");
+        back.setOnMouseClicked(e -> {
+            if (onBack != null) {
+                onBack.run();
+            }
+        });
+
+        Label title = new Label("Check Availability");
+        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 20));
+
+        Label subtitle = new Label("Find an available room before making a booking");
+        subtitle.setStyle("-fx-text-fill:" + Theme.TEXT_MUTED + ";");
+
+        VBox box = new VBox(6, back, title, subtitle);
         box.setPadding(new Insets(0, 0, 15, 0));
+
         return box;
     }
 
     private VBox buildBody() {
 
+        // ================= Search Card =================
+        Label searchTitle = new Label("Availability Search");
+        searchTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+
         GridPane searchPane = new GridPane();
         searchPane.setHgap(10);
-        searchPane.setVgap(10);
+        searchPane.setVgap(12);
+        searchPane.setPadding(new Insets(15, 0, 15, 0));
 
-        buildingField.setPromptText("Building (optional)");
+        buildingField.setPromptText("Building (Optional)");
 
-        searchPane.addRow(0,
-                new Label("Date:"),
-                datePicker);
+        GridPane.setHgrow(datePicker, javafx.scene.layout.Priority.ALWAYS);
+        GridPane.setHgrow(buildingField, javafx.scene.layout.Priority.ALWAYS);
 
-        searchPane.addRow(1,
-                new Label("Building:"),
-                buildingField);
+        searchPane.addRow(0, new Label("Date"), datePicker);
+        searchPane.addRow(1, new Label("Building"), buildingField);
 
-        searchPane.add(checkButton,1,2);
+        checkButton.setStyle(Theme.primaryButton());
 
-        availabilityList.setPrefHeight(350);
+        VBox searchCard = new VBox(10,
+                searchTitle,
+                searchPane,
+                checkButton);
 
-        VBox left = new VBox(10,
-                new Label("Available Time Slots"),
+        searchCard.setPadding(new Insets(20));
+        searchCard.setStyle(Theme.card());
+
+        // Available Slots
+
+        Label slotsTitle = new Label("Available Time Slots");
+        slotsTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+
+        availabilityList.setPrefHeight(320);
+        availabilityList.setPlaceholder(
+                new Label("Select a date and click Check Availability.")
+        );
+
+        availabilityList.setCellFactory(list -> new ListCell<>() {
+
+            @Override
+            protected void updateItem(String item, boolean empty) {
+
+                super.updateItem(item, empty);
+
+                if (empty || item == null) {
+                    setGraphic(null);
+                    return;
+                }
+
+                VBox card = new VBox(6);
+                card.setPadding(new Insets(12));
+                card.setStyle(
+                        "-fx-background-color:white;" +
+                                "-fx-border-color:" + Theme.GREY_BORDER + ";" +
+                                "-fx-background-radius:8;" +
+                                "-fx-border-radius:8;"
+                );
+
+                String icon = "🟢";
+                String status = "Available";
+
+                if (item.contains("🔴")) {
+                    icon = "🔴";
+                    status = "Booked";
+                }
+
+                String text = item
+                        .replace("🟢", "")
+                        .replace("🔴", "")
+                        .trim();
+
+                Label title = new Label(icon + " " + text);
+                title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+
+                Label statusLabel = new Label(status);
+
+                if (status.equals("Available")) {
+                    statusLabel.setStyle(
+                            "-fx-text-fill: green;" +
+                                    "-fx-font-weight:bold;"
+                    );
+                }
+                else {
+                    statusLabel.setStyle(
+                            "-fx-text-fill: #c62828;" +
+                                    "-fx-font-weight:bold;"
+                    );
+                }
+
+                card.getChildren().addAll(title, statusLabel);
+
+                setGraphic(card);
+            }
+        });
+
+        VBox slotsCard = new VBox(10,
+                slotsTitle,
                 availabilityList);
 
+        slotsCard.setPadding(new Insets(20));
+        slotsCard.setStyle(Theme.card());
+
+        HBox.setHgrow(slotsCard, javafx.scene.layout.Priority.ALWAYS);
+
+        // ================= Facility Details =================
+
+        Label detailsTitle = new Label("Facility Details");
+        detailsTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+
         GridPane details = new GridPane();
-
         details.setHgap(10);
-        details.setVgap(10);
+        details.setVgap(12);
 
-        details.addRow(0,new Label("Facility ID:"),facilityIdLabel);
-        details.addRow(1,new Label("Type:"),facilityTypeLabel);
-        details.addRow(2,new Label("Capacity:"),capacityLabel);
-        details.addRow(3,new Label("Building:"),buildingLabel);
+        details.addRow(0, boldLabel("Facility ID"), facilityIdLabel);
+        details.addRow(1, boldLabel("Type"), facilityTypeLabel);
+        details.addRow(2, boldLabel("Capacity"), capacityLabel);
+        details.addRow(3, boldLabel("Building"), buildingLabel);
 
-        TitledPane infoPane = new TitledPane();
-        infoPane.setText("Facility Details");
-        infoPane.setContent(details);
-        infoPane.setExpanded(true);
+        VBox detailsCard = new VBox(10,
+                detailsTitle,
+                details);
 
-        HBox content = new HBox(20,left,infoPane);
+        detailsCard.setPadding(new Insets(20));
+        detailsCard.setStyle(Theme.card());
+        detailsCard.setPrefWidth(260);
 
-        VBox page = new VBox(20);
+        // ================= Layout =================
 
-        page.getChildren().addAll(searchPane,content);
+        HBox cards = new HBox(20,
+                slotsCard,
+                detailsCard);
+
+        VBox page = new VBox(20,
+                searchCard,
+                cards);
 
         return page;
     }
 
-    private javafx.scene.layout.HBox buildActions() {
-        proceedButton.setOnAction(e -> handleProceed());
-        backButton.setOnAction(e -> { if (onBack != null) onBack.run(); });
+    private Label boldLabel(String text) {
+        Label label = new Label(text);
+        label.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+        return label;
+    }
 
-        javafx.scene.layout.HBox box = new javafx.scene.layout.HBox(10, proceedButton, backButton, statusLabel);
-        box.setPadding(new Insets(15, 0, 0, 0));
-        return box;
+    private HBox buildActions() {
+
+        proceedButton.setStyle(Theme.primaryButton());
+        backButton.setStyle(Theme.secondaryButton());
+
+        proceedButton.setOnAction(e -> handleProceed());
+
+        backButton.setOnAction(e -> {
+            if (onBack != null) {
+                onBack.run();
+            }
+        });
+
+        statusLabel.setWrapText(true);
+
+        HBox buttons = new HBox(10,
+                proceedButton,
+                backButton);
+
+        VBox wrapper = new VBox(10,
+                buttons,
+                statusLabel);
+
+        wrapper.setPadding(new Insets(15, 0, 0, 0));
+
+        return new HBox(wrapper);
     }
 
     private void handleCheck() {
+
         LocalDate date = datePicker.getValue();
+
         if (date == null) {
             statusLabel.setText("Please select a date.");
             return;
         }
 
         checkButton.setDisable(true);
+        proceedButton.setDisable(true);
+        availabilityList.setDisable(true);
+
         statusLabel.setText("Checking availability...");
 
         worker.submit(() -> {
+
             try {
+
                 Map<String, Object> args = new LinkedHashMap<>();
-                args.put("date", date.format(DateTimeFormatter.ISO_LOCAL_DATE));
+                args.put("date",
+                        date.format(DateTimeFormatter.ISO_LOCAL_DATE));
+
                 String building = buildingField.getText().trim();
+
                 if (!building.isEmpty()) {
                     args.put("building", building);
                 }
 
-                String result = mcpClient.callTool("check_room_availability", args);
+                String result =
+                        mcpClient.callTool("check_room_availability", args);
 
                 Platform.runLater(() -> {
+
                     availabilityList.getItems().clear();
+
                     String[] lines = result.split("\\n");
+
                     for (String line : lines) {
 
-                        line = line.trim();
-
-                        if (line.isBlank())
+                        if (line.isBlank()) {
                             continue;
-
-                        if (line.startsWith("Availability"))
-                            continue;
-
-                        if (line.contains("-> free")) {
-                            availabilityList.getItems().add("🟢 " + line);
                         }
-                        else {
+
+                        if (line.toLowerCase().contains("available")) {
+
+                            availabilityList.getItems().add("🟢 " + line);
+
+                        } else if (line.toLowerCase().contains("booked")) {
+
                             availabilityList.getItems().add("🔴 " + line);
+
+                        } else {
+
+                            availabilityList.getItems().add(line);
                         }
                     }
+
                     statusLabel.setText("");
+
                     checkButton.setDisable(false);
+                    availabilityList.setDisable(false);
+                    proceedButton.setDisable(false);
+
                 });
+
             } catch (Exception ex) {
+
                 Platform.runLater(() -> {
-                    statusLabel.setText("Failed to check availability: " + ex.getMessage());
+
+                    statusLabel.setText(
+                            "Failed to check availability: "
+                                    + ex.getMessage());
+
                     checkButton.setDisable(false);
+                    availabilityList.setDisable(false);
+                    proceedButton.setDisable(false);
+
                 });
+
             }
+
         });
     }
 
-   private void handleProceed() {
+    private void handleProceed() {
 
-        String selected = availabilityList.getSelectionModel().getSelectedItem();
-
-        if (selected == null) {
-            statusLabel.setText("Please select a facility.");
+        if (availabilityList.getSelectionModel().getSelectedItem() == null) {
+            statusLabel.setText("Please select an available time slot.");
             return;
         }
-
-        if (selected.contains("HAS BOOKING")) {
-            statusLabel.setText("This resource is already booked.");
-            return;
-        }
-
-        selected = selected.replace("🟢", "")
-                        .replace("🔴", "")
-                        .trim();
-
-        String[] parts = selected.split("\\s+");
-
-        if (parts.length < 5) {
-            statusLabel.setText("Invalid facility information.");
-            return;
-        }
-
-        String resourceId = parts[0];
-        String facilityName = parts[1];
 
         if (onProceedToBooking != null) {
-            onProceedToBooking.accept(resourceId, facilityName);
+            onProceedToBooking.accept(
+                    selectedResourceId,
+                    selectedFacilityName
+            );
         }
     }
 }

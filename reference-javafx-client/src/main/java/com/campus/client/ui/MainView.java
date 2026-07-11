@@ -50,7 +50,8 @@ public class MainView {
     private User currentUser;
 
     public MainView() {
-        root.setTop(buildTopArea());
+        root.setTop(header);
+        root.setLeft(navBar);
         root.setBottom(footer);
         navBar.setOnDashboard(this::showDashboard);
         navBar.setOnFacilities(this::showFacilities);
@@ -82,15 +83,18 @@ public class MainView {
         // when the student navigates to them.
     }
 
-    private javafx.scene.layout.VBox buildTopArea() {
-        javafx.scene.layout.VBox top = new javafx.scene.layout.VBox(header, navBar);
-        return top;
-    }
 
     private void setContent(javafx.scene.Node content) {
         ScrollPane scrollPane = new ScrollPane(content);
         scrollPane.setFitToWidth(true);
-        scrollPane.setStyle("-fx-background-color: transparent;");
+        scrollPane.setFitToHeight(true);
+        scrollPane.setPannable(true);
+        scrollPane.setStyle(
+                "-fx-background: transparent;" +
+                        "-fx-background-color: transparent;" +
+                        "-fx-padding:0;"
+        );
+
         root.setCenter(scrollPane);
     }
 
