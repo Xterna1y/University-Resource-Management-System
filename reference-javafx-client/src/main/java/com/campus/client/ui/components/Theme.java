@@ -44,4 +44,15 @@ public final class Theme {
         return "-fx-background-color: white; -fx-border-color:" + GREY_BORDER + "; -fx-border-radius: 8;"
                 + " -fx-background-radius: 8;";
     }
+
+    public static String title() {
+        return "-fx-text-fill:" + DARK + ";" +
+                "-fx-font-size:20px;" +
+                "-fx-font-weight:bold;";
+    }
+
+    public static String subtitle() {
+        return "-fx-text-fill:" + TEXT_MUTED + ";" +
+                "-fx-font-size:13px;";
+    }
 }

@@ -47,6 +47,7 @@ public class FaciView extends BorderPane {
 
     private Consumer<String> onCheckAvailability;
     private Runnable onBack;
+    private String facilitiesText = "";
 
     public FaciView(CampusMcpClient mcpClient,
                     ExecutorService worker) {
@@ -91,35 +92,50 @@ public class FaciView extends BorderPane {
         });
 
         Label title = new Label("Browse Campus Facilities");
-        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 20));
+        title.setStyle(Theme.title());
 
         Label subtitle = new Label(
                 "Search and select a facility to check availability."
         );
-
-        subtitle.setStyle("-fx-text-fill:" + Theme.TEXT_MUTED + ";");
+        subtitle.setStyle(Theme.subtitle());
 
         searchField.setPromptText(
                 "Search by facility name, building or type..."
         );
 
+        searchField.setPrefHeight(36);
+
         searchField.textProperty().addListener(
                 (o, oldVal, newVal) -> applyFilter(newVal));
 
-        VBox box = new VBox(6,
+        VBox box = new VBox(8,
                 back,
                 title,
                 subtitle,
                 searchField);
 
-        box.setPadding(new Insets(0,0,15,0));
+        box.setPadding(new Insets(0, 0, 15, 0));
 
         return box;
     }
 
     private VBox buildBody() {
 
+        Label heading = new Label("Available Facilities");
+        heading.setStyle(
+                "-fx-font-size:16;" +
+                        "-fx-font-weight:bold;" +
+                        "-fx-text-fill:" + Theme.DARK + ";"
+        );
+
         resultsList.setPrefHeight(520);
+
+        resultsList.setStyle(
+                "-fx-background-color:white;" +
+                        "-fx-control-inner-background:white;" +
+                        "-fx-selection-bar:#E8E8E8;" +
+                        "-fx-selection-bar-non-focused:#F0F0F0;"
+        );
 
         resultsList.setPlaceholder(
                 new Label("Loading facilities...")
@@ -134,8 +150,11 @@ public class FaciView extends BorderPane {
 
                 if (empty || item == null) {
                     setGraphic(null);
+                    setText(null);
                     return;
                 }
+
+                setText(null);
 
                 VBox card = new VBox(6);
                 card.setPadding(new Insets(15));
@@ -161,21 +180,27 @@ public class FaciView extends BorderPane {
                     icon = "👥";
                 else if (lower.contains("study"))
                     icon = "📚";
-                else if (lower.contains("sport")
-                        || lower.contains("court"))
+                else if (lower.contains("sport") || lower.contains("court"))
                     icon = "🏀";
 
                 Label title = new Label(icon + " " + firstLine);
-                title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+                title.setStyle(
+                        "-fx-font-size:14;" +
+                                "-fx-font-weight:bold;" +
+                                "-fx-text-fill:" + Theme.DARK + ";"
+                );
 
-                VBox details = new VBox(3);
+                VBox details = new VBox(4);
 
                 for (int i = 1; i < lines.length; i++) {
 
                     Label l = new Label(lines[i]);
 
+                    l.setWrapText(true);
+
                     l.setStyle(
-                            "-fx-text-fill:" + Theme.TEXT_MUTED + ";"
+                            "-fx-text-fill:" + Theme.TEXT_MUTED + ";" +
+                                    "-fx-font-size:12;"
                     );
 
                     details.getChildren().add(l);
@@ -184,11 +209,37 @@ public class FaciView extends BorderPane {
                 card.getChildren().addAll(title, details);
 
                 setGraphic(card);
+
+                /* Fixes white text when selected */
+                selectedProperty().addListener((obs, wasSelected, isSelected) -> {
+
+                    if (isSelected) {
+                        card.setStyle(
+                                "-fx-background-color:#F5F5F5;" +
+                                        "-fx-border-color:" + Theme.RED + ";" +
+                                        "-fx-background-radius:8;" +
+                                        "-fx-border-radius:8;"
+                        );
+                    } else {
+                        card.setStyle(
+                                "-fx-background-color:white;" +
+                                        "-fx-border-color:" + Theme.GREY_BORDER + ";" +
+                                        "-fx-background-radius:8;" +
+                                        "-fx-border-radius:8;"
+                        );
+                    }
+
+                    title.setStyle(
+                            "-fx-font-size:14;" +
+                                    "-fx-font-weight:bold;" +
+                                    "-fx-text-fill:" + Theme.DARK + ";"
+                    );
+                });
             }
         });
 
-        VBox card = new VBox(10,
-                new Label("Available Facilities"),
+        VBox card = new VBox(12,
+                heading,
                 resultsList);
 
         card.setPadding(new Insets(20));
@@ -199,20 +250,16 @@ public class FaciView extends BorderPane {
 
     private HBox buildActions() {
 
-        checkAvailabilityButton.setStyle(
-                Theme.primaryButton());
-
-        backButton.setStyle(
-                Theme.secondaryButton());
+        checkAvailabilityButton.setStyle(Theme.primaryButton());
+        backButton.setStyle(Theme.secondaryButton());
 
         checkAvailabilityButton.setOnAction(e -> {
 
-            String selected =
-                    resultsList.getSelectionModel().getSelectedItem();
+            String selected = resultsList.getSelectionModel().getSelectedItem();
 
             if (selected == null) {
-                statusLabel.setText(
-                        "Please select a facility.");
+                statusLabel.setStyle("-fx-text-fill:" + Theme.RED + ";");
+                statusLabel.setText("Please select a facility.");
                 return;
             }
 
@@ -230,6 +277,7 @@ public class FaciView extends BorderPane {
         });
 
         statusLabel.setWrapText(true);
+        statusLabel.setStyle("-fx-text-fill:" + Theme.DARK + ";");
 
         HBox buttons = new HBox(10,
                 checkAvailabilityButton,
@@ -239,13 +287,14 @@ public class FaciView extends BorderPane {
                 buttons,
                 statusLabel);
 
-        wrapper.setPadding(new Insets(15,0,0,0));
+        wrapper.setPadding(new Insets(15, 0, 0, 0));
 
         return new HBox(wrapper);
     }
 
     private void loadFacilities() {
 
+        statusLabel.setStyle("-fx-text-fill:" + Theme.TEXT_MUTED + ";");
         statusLabel.setText("Loading facilities...");
 
         resultsList.setDisable(true);
@@ -254,11 +303,11 @@ public class FaciView extends BorderPane {
 
             try {
 
-                String text =
-                        mcpClient.readResource("campus://facilities");
+                String text = mcpClient.readResource("campus://facilities");
 
-                List<String> entries =
-                        splitIntoEntries(text);
+                facilitiesText = text;
+
+                List<String> entries = splitIntoEntries(text);
 
                 Platform.runLater(() -> {
 
@@ -273,8 +322,8 @@ public class FaciView extends BorderPane {
                             new Label("No facilities found.")
                     );
 
-                    statusLabel.setText(
-                            entries.size() + " facilities loaded.");
+                    statusLabel.setStyle("-fx-text-fill:" + Theme.GREEN_TEXT + ";");
+                    statusLabel.setText(entries.size() + " section(s) loaded.");
 
                 });
 
@@ -288,9 +337,9 @@ public class FaciView extends BorderPane {
                             new Label("Unable to load facilities.")
                     );
 
+                    statusLabel.setStyle("-fx-text-fill:" + Theme.RED + ";");
                     statusLabel.setText(
-                            "Could not load facilities:\n"
-                                    + ex.getMessage());
+                            "Could not load facilities:\n" + ex.getMessage());
 
                 });
 

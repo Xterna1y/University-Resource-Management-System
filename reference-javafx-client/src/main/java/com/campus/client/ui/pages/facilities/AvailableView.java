@@ -35,7 +35,7 @@ public class AvailableView extends BorderPane {
     private final ExecutorService worker;
 
     private final DatePicker datePicker = new DatePicker(LocalDate.now());
-    private final TextField buildingField = new TextField();
+    private final ComboBox<String> buildingField = new ComboBox<>();
     private final Button checkButton = new Button("Check Availability");
     private final ListView<String> availabilityList = new ListView<>();
 
@@ -87,17 +87,24 @@ public class AvailableView extends BorderPane {
                 (obs, oldValue, newValue) -> {
 
                     if (newValue == null) {
+                        proceedButton.setDisable(true);
                         return;
                     }
+
+                    // Don't allow booking unavailable resources
+                    proceedButton.setDisable(newValue.contains("🔴"));
 
                     selectedResourceId = "AUTO";
 
                     facilityIdLabel.setText(selectedResourceId);
 
+
+                    String building = buildingField.getValue();
+
                     buildingLabel.setText(
-                            buildingField.getText().isBlank()
-                                    ? "Unknown"
-                                    : buildingField.getText()
+                            building == null || building.equals("All")
+                                    ? "-"
+                                    : building
                     );
 
                     String lower = selectedFacilityName.toLowerCase();
@@ -143,10 +150,10 @@ public class AvailableView extends BorderPane {
         });
 
         Label title = new Label("Check Availability");
-        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 20));
+        title.setStyle(Theme.title());
 
         Label subtitle = new Label("Find an available room before making a booking");
-        subtitle.setStyle("-fx-text-fill:" + Theme.TEXT_MUTED + ";");
+        subtitle.setStyle(Theme.subtitle());
 
         VBox box = new VBox(6, back, title, subtitle);
         box.setPadding(new Insets(0, 0, 15, 0));
@@ -158,14 +165,29 @@ public class AvailableView extends BorderPane {
 
         // ================= Search Card =================
         Label searchTitle = new Label("Availability Search");
-        searchTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+        searchTitle.setStyle(
+                "-fx-font-size:14px;" +
+                        "-fx-font-weight:bold;" +
+                        "-fx-text-fill:" + Theme.DARK + ";"
+        );
 
         GridPane searchPane = new GridPane();
         searchPane.setHgap(10);
         searchPane.setVgap(12);
         searchPane.setPadding(new Insets(15, 0, 15, 0));
 
-        buildingField.setPromptText("Building (Optional)");
+        buildingField.setPromptText("Select Building");
+
+        buildingField.getItems().addAll(
+                "All",
+                "D",
+                "E",
+                "LAB",
+                "LIB",
+                "OUT"
+        );
+
+        buildingField.getSelectionModel().selectFirst();
 
         GridPane.setHgrow(datePicker, javafx.scene.layout.Priority.ALWAYS);
         GridPane.setHgrow(buildingField, javafx.scene.layout.Priority.ALWAYS);
@@ -186,12 +208,23 @@ public class AvailableView extends BorderPane {
         // Available Slots
 
         Label slotsTitle = new Label("Available Time Slots");
-        slotsTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+        slotsTitle.setStyle(
+                "-fx-font-size:14px;" +
+                        "-fx-font-weight:bold;" +
+                        "-fx-text-fill:" + Theme.DARK + ";"
+        );
 
         availabilityList.setPrefHeight(320);
-        availabilityList.setPlaceholder(
-                new Label("Select a date and click Check Availability.")
+        availabilityList.setStyle(
+                "-fx-control-inner-background:white;" +
+                        "-fx-selection-bar:#E8F0FE;" +
+                        "-fx-selection-bar-text:black;" +
+                        "-fx-text-fill:black;"
         );
+
+        Label empty = new Label("Select a building and date, then click Check Availability.");
+        empty.setStyle("-fx-text-fill:" + Theme.TEXT_MUTED + ";");
+        availabilityList.setPlaceholder(empty);
 
         availabilityList.setCellFactory(list -> new ListCell<>() {
 
@@ -228,26 +261,28 @@ public class AvailableView extends BorderPane {
                         .trim();
 
                 Label title = new Label(icon + " " + text);
-                title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+                title.setStyle(
+                        "-fx-font-weight:bold;" +
+                                "-fx-text-fill:" + Theme.DARK + ";" +
+                                "-fx-font-size:13px;"
+                );
 
                 Label statusLabel = new Label(status);
-
-                if (status.equals("Available")) {
-                    statusLabel.setStyle(
-                            "-fx-text-fill: green;" +
-                                    "-fx-font-weight:bold;"
-                    );
-                }
-                else {
-                    statusLabel.setStyle(
-                            "-fx-text-fill: #c62828;" +
-                                    "-fx-font-weight:bold;"
-                    );
-                }
+                statusLabel.setStyle(
+                        status.equals("Available")
+                                ? Theme.statusPill(true)
+                                : Theme.statusPill(false)
+                );
 
                 card.getChildren().addAll(title, statusLabel);
 
                 setGraphic(card);
+
+                availabilityList.setStyle(
+                        "-fx-selection-bar:#E8F0FE;" +
+                                "-fx-selection-bar-text:black;" +
+                                "-fx-control-inner-background:white;"
+                );
             }
         });
 
@@ -263,7 +298,11 @@ public class AvailableView extends BorderPane {
         // ================= Facility Details =================
 
         Label detailsTitle = new Label("Facility Details");
-        detailsTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+        detailsTitle.setStyle(
+                "-fx-font-size:14px;" +
+                        "-fx-font-weight:bold;" +
+                        "-fx-text-fill:" + Theme.DARK + ";"
+        );
 
         GridPane details = new GridPane();
         details.setHgap(10);
@@ -297,7 +336,10 @@ public class AvailableView extends BorderPane {
 
     private Label boldLabel(String text) {
         Label label = new Label(text);
-        label.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+        label.setStyle(
+                "-fx-font-weight:bold;" +
+                        "-fx-text-fill:" + Theme.DARK + ";"
+        );
         return label;
     }
 
@@ -352,9 +394,9 @@ public class AvailableView extends BorderPane {
                 args.put("date",
                         date.format(DateTimeFormatter.ISO_LOCAL_DATE));
 
-                String building = buildingField.getText().trim();
+                String building = buildingField.getValue();
 
-                if (!building.isEmpty()) {
+                if (building != null && !building.equals("All")) {
                     args.put("building", building);
                 }
 
@@ -369,29 +411,27 @@ public class AvailableView extends BorderPane {
 
                     for (String line : lines) {
 
+                        line = line.trim();
+
                         if (line.isBlank()) {
                             continue;
                         }
 
-                        if (line.toLowerCase().contains("available")) {
-
-                            availabilityList.getItems().add("🟢 " + line);
-
-                        } else if (line.toLowerCase().contains("booked")) {
-
-                            availabilityList.getItems().add("🔴 " + line);
-
-                        } else {
-
-                            availabilityList.getItems().add(line);
+                        // Ignore headings or separators from the MCP output
+                        if (line.startsWith("[")
+                                || line.startsWith("=")
+                                || line.toLowerCase().contains("available resources")) {
+                            continue;
                         }
+
+                        availabilityList.getItems().add(line);
                     }
 
                     statusLabel.setText("");
 
                     checkButton.setDisable(false);
                     availabilityList.setDisable(false);
-                    proceedButton.setDisable(false);
+                    proceedButton.setDisable(true);
 
                 });
 
