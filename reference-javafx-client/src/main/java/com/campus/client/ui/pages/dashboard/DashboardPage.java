@@ -36,9 +36,11 @@ public class DashboardPage extends VBox {
 
         Label welcome = new Label("Hello, " + user.getName());
         welcome.setFont(Font.font("Segoe UI", FontWeight.BOLD, 22));
+        welcome.setStyle("-fx-text-fill:" + Theme.DARK + ";");
 
         Label heading = new Label("Dashboard");
         heading.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
+        heading.setStyle("-fx-text-fill:" + Theme.DARK + ";");
 
         Label subtitle = new Label("Overview of your campus activities");
         subtitle.setStyle("-fx-text-fill:" + Theme.TEXT_MUTED + ";");
@@ -60,6 +62,7 @@ public class DashboardPage extends VBox {
 
         Label quickActionsTitle = new Label("Quick Actions");
         quickActionsTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+        quickActionsTitle.setStyle("-fx-text-fill:" + Theme.DARK + ";");
 
         VBox quickActionsCard = new VBox(12, quickActionsTitle, actionsList);
         quickActionsCard.setPadding(new Insets(20));
@@ -76,6 +79,7 @@ public class DashboardPage extends VBox {
 
         Label titleLabel = new Label(title);
         titleLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+        titleLabel.setStyle("-fx-text-fill:" + Theme.DARK + ";");
 
         Label descLabel = new Label(description);
         descLabel.setStyle("-fx-text-fill:" + Theme.TEXT_MUTED + "; -fx-font-size: 11px;");

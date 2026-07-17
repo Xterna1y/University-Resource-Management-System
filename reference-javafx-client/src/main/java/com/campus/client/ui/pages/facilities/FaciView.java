@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
  * rather than parsed into strict fields. Tighten the parsing once you've
  * seen the real file, if you want structured columns instead.
  */
+@SuppressWarnings("unused")
 public class FaciView extends BorderPane {
 
     private final CampusMcpClient mcpClient;
