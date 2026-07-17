@@ -32,7 +32,7 @@ public class FaciView extends BorderPane {
 
     private final CampusMcpClient mcpClient;
     private final ExecutorService worker;
-
+    private final Label notesLabel = new Label();
     private final TextField searchField = new TextField();
     private final ListView<String> resultsList = new ListView<>();
 
@@ -45,6 +45,7 @@ public class FaciView extends BorderPane {
             new Button("Back");
 
     private List<String> allEntries = List.of();
+    private String notesText = "";
 
     private Consumer<String> onCheckAvailability;
     private Runnable onBack;
@@ -239,9 +240,30 @@ public class FaciView extends BorderPane {
             }
         });
 
-        VBox card = new VBox(12,
+        Label notesTitle = new Label("Notes");
+        notesTitle.setStyle(
+                "-fx-font-size:14;" +
+                        "-fx-font-weight:bold;" +
+                        "-fx-text-fill:" + Theme.DARK + ";"
+        );
+
+        Label notesLabel = new Label();
+        notesLabel.setWrapText(true);
+        notesLabel.setStyle(
+                "-fx-text-fill:" + Theme.TEXT_MUTED + ";"
+        );
+
+        VBox notesCard = new VBox(8,
+                notesTitle,
+                notesLabel);
+
+        notesCard.setPadding(new Insets(15));
+        notesCard.setStyle(Theme.card());
+
+        VBox card = new VBox(15,
                 heading,
-                resultsList);
+                resultsList,
+                notesCard);
 
         card.setPadding(new Insets(20));
         card.setStyle(Theme.card());
@@ -313,6 +335,7 @@ public class FaciView extends BorderPane {
                 Platform.runLater(() -> {
 
                     allEntries = entries;
+                    notesLabel.setText(notesText);
 
                     resultsList.setItems(
                             FXCollections.observableArrayList(entries));
@@ -356,12 +379,54 @@ public class FaciView extends BorderPane {
             return List.of();
         }
 
-        return List.of(text.split("\\n\\s*\\n"))
-                .stream()
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.toList());
+        List<String> facilities = new java.util.ArrayList<>();
 
+        boolean insideResources = false;
+        boolean insideNotes = false;
+
+        StringBuilder notes = new StringBuilder();
+
+        for (String line : text.split("\\r?\\n")) {
+
+            line = line.trim();
+
+            if (line.isBlank()) {
+                continue;
+            }
+
+            if (line.contains("[Bookable Resources]")) {
+                insideResources = true;
+                insideNotes = false;
+                continue;
+            }
+
+            if (line.contains("[Notes]")) {
+                insideResources = false;
+                insideNotes = true;
+                continue;
+            }
+
+            if (insideNotes) {
+                notes.append(line).append("\n");
+                continue;
+            }
+
+            if (!insideResources) {
+                continue;
+            }
+
+            if (line.startsWith("ROOM")
+                    || line.startsWith("=")
+                    || line.startsWith(":=")) {
+                continue;
+            }
+
+            facilities.add(line);
+        }
+
+        notesText = notes.toString().trim();
+
+        return facilities;
     }
 
     private void applyFilter(String query) {
