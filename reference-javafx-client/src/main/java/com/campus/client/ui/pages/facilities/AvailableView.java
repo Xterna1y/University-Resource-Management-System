@@ -29,6 +29,7 @@ import java.util.function.BiConsumer;
  * book into the small form below, rather than this screen guessing at a
  * parsed room ID from unstructured text.
  */
+@SuppressWarnings("unused")
 public class AvailableView extends BorderPane {
 
     private final CampusMcpClient mcpClient;

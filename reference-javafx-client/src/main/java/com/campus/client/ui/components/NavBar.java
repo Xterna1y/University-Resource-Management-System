@@ -11,10 +11,17 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
 /**
- * Sidebar navigation used throughout the application.
- * MainView still wires navigation through the setters below.
+ * Sidebar navigation. Same callback setters as before (setOnDashboard,
+ * setOnFacilities, setOnHistory, setOnAssistant, setOnLogout).
+ * Changes: Profile removed, and the current page is now highlighted red
+ * (matching the mockup) via setActive(String).
  */
 public class NavBar extends VBox {
+
+    public static final String DASHBOARD = "dashboard";
+    public static final String FACILITIES = "facilities";
+    public static final String BOOKINGS = "bookings";
+    public static final String ASSISTANT = "assistant";
 
     private final Label logo = new Label("TU");
 
@@ -24,8 +31,9 @@ public class NavBar extends VBox {
     private final Button assistantButton = createButton("Assistant");
     private final Button logoutButton = createButton("Logout");
 
-    public NavBar() {
+    private String activePage = DASHBOARD;
 
+    public NavBar() {
         setPrefWidth(180);
         setMinWidth(180);
         setMaxWidth(180);
@@ -33,12 +41,9 @@ public class NavBar extends VBox {
         setSpacing(8);
         setPadding(new Insets(20));
 
-        setStyle(
-                "-fx-background-color:#2D2F33;"
-        );
+        setStyle("-fx-background-color:#2D2F33;");
 
         logo.setFont(Font.font("Segoe UI", FontWeight.BOLD, 28));
-
         logo.setStyle(
                 "-fx-text-fill:white;" +
                 "-fx-background-color:#D32F2F;" +
@@ -61,41 +66,15 @@ public class NavBar extends VBox {
 
         setVisible(false);
         setManaged(false);
+
+        applyActiveStyles();
     }
 
     private Button createButton(String text) {
-
         Button b = new Button(text);
-
         b.setAlignment(Pos.CENTER_LEFT);
-
         b.setPrefWidth(Double.MAX_VALUE);
-
         b.setPrefHeight(42);
-
-        b.setStyle(
-                "-fx-background-color:transparent;" +
-                "-fx-text-fill:white;" +
-                "-fx-font-size:14;" +
-                "-fx-font-weight:bold;"
-        );
-
-        b.setOnMouseEntered(e ->
-                b.setStyle(
-                        "-fx-background-color:#D32F2F;" +
-                        "-fx-text-fill:white;" +
-                        "-fx-font-size:14;" +
-                        "-fx-font-weight:bold;"
-                ));
-
-        b.setOnMouseExited(e ->
-                b.setStyle(
-                        "-fx-background-color:transparent;" +
-                        "-fx-text-fill:white;" +
-                        "-fx-font-size:14;" +
-                        "-fx-font-weight:bold;"
-                ));
-
         return b;
     }
 
@@ -105,23 +84,32 @@ public class NavBar extends VBox {
         setManaged(loggedIn);
     }
 
-    public void setOnDashboard(Runnable r) {
-        dashboardButton.setOnAction(e -> r.run());
+    /** Highlights the given page red (matching the mockup) and un-highlights the rest. */
+    public void setActive(String page) {
+        this.activePage = page;
+        applyActiveStyles();
     }
 
-    public void setOnFacilities(Runnable r) {
-        facilitiesButton.setOnAction(e -> r.run());
+    private void applyActiveStyles() {
+        styleButton(dashboardButton, DASHBOARD.equals(activePage));
+        styleButton(facilitiesButton, FACILITIES.equals(activePage));
+        styleButton(historyButton, BOOKINGS.equals(activePage));
+        styleButton(assistantButton, ASSISTANT.equals(activePage));
+        // Logout is never "active" - it's an action, not a page.
+        styleButton(logoutButton, false);
     }
 
-    public void setOnHistory(Runnable r) {
-        historyButton.setOnAction(e -> r.run());
+    private void styleButton(Button b, boolean active) {
+        String activeStyle = "-fx-background-color:#D32F2F; -fx-text-fill:white; -fx-font-size:14; -fx-font-weight:bold;";
+        String inactiveStyle = "-fx-background-color:transparent; -fx-text-fill:white; -fx-font-size:14; -fx-font-weight:bold;";
+        b.setStyle(active ? activeStyle : inactiveStyle);
+        b.setOnMouseEntered(e -> { if (!active) b.setStyle(inactiveStyle + "-fx-background-color:#3D3F44;"); });
+        b.setOnMouseExited(e -> b.setStyle(active ? activeStyle : inactiveStyle));
     }
 
-    public void setOnAssistant(Runnable r) {
-        assistantButton.setOnAction(e -> r.run());
-    }
-
-    public void setOnLogout(Runnable r) {
-        logoutButton.setOnAction(e -> r.run());
-    }
+    public void setOnDashboard(Runnable r) { dashboardButton.setOnAction(e -> r.run()); }
+    public void setOnFacilities(Runnable r) { facilitiesButton.setOnAction(e -> r.run()); }
+    public void setOnHistory(Runnable r) { historyButton.setOnAction(e -> r.run()); }
+    public void setOnAssistant(Runnable r) { assistantButton.setOnAction(e -> r.run()); }
+    public void setOnLogout(Runnable r) { logoutButton.setOnAction(e -> r.run()); }
 }

@@ -8,6 +8,7 @@ import com.campus.client.services.rag.RagService;
 import com.campus.client.ui.components.Footer;
 import com.campus.client.ui.components.Header;
 import com.campus.client.ui.components.NavBar;
+import com.campus.client.ui.components.Theme;
 import com.campus.client.ui.pages.assistant.AssistantView;
 import com.campus.client.ui.pages.booking.BHistory;
 import com.campus.client.ui.pages.booking.BookingView;
@@ -33,6 +34,14 @@ import java.util.concurrent.ThreadFactory;
  */
 public class MainView {
 
+    static {
+        // JavaFX 21+ auto-detects the OS dark-mode setting and swaps default control
+        // text to white, expecting a dark background. This app uses hardcoded light
+        // backgrounds throughout, so pin the classic light theme here as a first layer
+        // of defense.
+        javafx.application.Application.setUserAgentStylesheet(javafx.application.Application.STYLESHEET_MODENA);
+    }
+
     private final BorderPane root = new BorderPane();
     private final Header header = new Header();
     private final NavBar navBar = new NavBar();
@@ -50,6 +59,21 @@ public class MainView {
     private User currentUser;
 
     public MainView() {
+        // Second layer of defense: the OS dark-mode preference injects a
+        // -fx-text-base-color override that Modena's own default Label style
+        // (.label { -fx-text-fill: -fx-text-base-color; }) then inherits, which is
+        // what actually made plain Labels and TableView column headers render white.
+        // Overriding these "looked-up color" variables here, closer in the cascade
+        // than the OS-injected value, fixes every unstyled Label/header at once.
+        root.setStyle(
+                "-fx-text-base-color: " + Theme.DARK + ";"
+                + "-fx-text-background-color: " + Theme.DARK + ";"
+                + "-fx-text-inner-color: " + Theme.DARK + ";"
+                + "-fx-dark-text-color: " + Theme.DARK + ";"
+                + "-fx-mid-text-color: " + Theme.DARK + ";"
+                + "-fx-light-text-color: " + Theme.DARK + ";"
+        );
+
         root.setTop(header);
         root.setLeft(navBar);
         root.setBottom(footer);
@@ -124,6 +148,7 @@ public class MainView {
 
     private void showDashboard() {
         requireLogin();
+        navBar.setActive(NavBar.DASHBOARD);
         DashboardPage page = new DashboardPage(currentUser);
         page.setOnBrowseFacilities(this::showFacilities);
         page.setOnBookingHistory(this::showBookingHistory);
@@ -134,6 +159,7 @@ public class MainView {
     private void showFacilities() {
         System.out.println("Facilities button clicked");
         requireLogin();
+        navBar.setActive(NavBar.FACILITIES);
         if (mcp == null) {
             setStatus("Still connecting to the campus server, please wait a moment and try again.");
             return;
@@ -145,6 +171,7 @@ public class MainView {
     }
 
     private void showAvailability(String prefillFacilityText) {
+        navBar.setActive(NavBar.FACILITIES);
         AvailableView page = new AvailableView(mcp, worker, prefillFacilityText);
         page.setOnProceedToBooking((resourceId, facilityName) -> showBooking(resourceId, facilityName));
         page.setOnBack(this::showFacilities);
@@ -152,6 +179,7 @@ public class MainView {
     }
 
     private void showBooking(String resourceId, String facilityName) {
+        navBar.setActive(NavBar.BOOKINGS);
         BookingView page = new BookingView(mcp, worker, bookingStorage,
                 currentUser.getStudentId(), resourceId, facilityName);
         page.setOnBackToAvailability(this::showFacilities);
@@ -161,6 +189,7 @@ public class MainView {
 
     private void showBookingHistory() {
         requireLogin();
+        navBar.setActive(NavBar.BOOKINGS);
         BHistory page = new BHistory(bookingStorage, currentUser.getStudentId());
         page.setOnBack(this::showDashboard);
         setContent(page);
@@ -168,6 +197,7 @@ public class MainView {
 
     private void showAssistant() {
         requireLogin();
+        navBar.setActive(NavBar.ASSISTANT);
         AssistantView page = new AssistantView(rag, worker); // rag may be null; AssistantView handles that
         page.setOnBack(this::showDashboard);
         setContent(page);

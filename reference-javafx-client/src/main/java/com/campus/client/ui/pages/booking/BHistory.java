@@ -23,6 +23,7 @@ import java.util.List;
  * confirmation). This pass only restyles the tab selector as segmented
  * buttons and adds a status pill + inline View action, to match the mockup.
  */
+@SuppressWarnings("unused")
 public class BHistory extends BorderPane {
 
     private enum Filter { UPCOMING, PAST, CANCELLED }
@@ -55,6 +56,7 @@ public class BHistory extends BorderPane {
     private VBox buildHeader() {
         Label title = new Label("Booking History");
         title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 20));
+        title.setStyle("-fx-text-fill:" + Theme.DARK + ";");
 
         Label subtitle = new Label("View your past and upcoming bookings");
         subtitle.setStyle("-fx-text-fill:" + Theme.TEXT_MUTED + ";");

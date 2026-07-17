@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutorService;
  * guard). This pass only restyles the transcript as chat bubbles instead
  * of a plain TextArea, matching the mockup.
  */
+@SuppressWarnings("unused")
 public class AssistantView extends BorderPane {
 
     private record ChatMessage(boolean fromUser, String text) {}
@@ -73,6 +74,7 @@ public class AssistantView extends BorderPane {
     private VBox buildHeader() {
         Label title = new Label("Campus Assistant");
         title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 20));
+        title.setStyle("-fx-text-fill:" + Theme.DARK + ";");
 
         Label subtitle = new Label("Ask me anything about campus facilities, bookings or policies");
         subtitle.setStyle("-fx-text-fill:" + Theme.TEXT_MUTED + ";");
@@ -190,14 +192,15 @@ public class AssistantView extends BorderPane {
             bubble.setWrapText(true);
             bubble.setMaxWidth(360);
             bubble.setPadding(new Insets(10, 14, 10, 14));
+            bubble.setStyle(bubble.getStyle() + "-fx-text-fill:" + Theme.DARK + ";");
 
             HBox row = new HBox(bubble);
             if (message.fromUser()) {
-                bubble.setStyle("-fx-background-color: #FCE4EC; -fx-background-radius: 12;");
+                bubble.setStyle("-fx-background-color: #FCE4EC; -fx-background-radius: 12; -fx-text-fill:" + Theme.DARK + ";");
                 row.setAlignment(Pos.CENTER_RIGHT);
             } else {
                 bubble.setStyle("-fx-background-color: white; -fx-border-color:" + Theme.GREY_BORDER
-                        + "; -fx-border-radius: 12; -fx-background-radius: 12;");
+                        + "; -fx-border-radius: 12; -fx-background-radius: 12; -fx-text-fill:" + Theme.DARK + ";");
                 row.setAlignment(Pos.CENTER_LEFT);
             }
             row.setFillHeight(false);
