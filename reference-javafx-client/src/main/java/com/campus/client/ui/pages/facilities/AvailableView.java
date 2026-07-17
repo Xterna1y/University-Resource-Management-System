@@ -36,7 +36,6 @@ public class AvailableView extends BorderPane {
     private final ExecutorService worker;
 
     private final DatePicker datePicker = new DatePicker(LocalDate.now());
-    private final ComboBox<String> buildingField = new ComboBox<>();
     private final Button checkButton = new Button("Check Availability");
     private final ListView<String> availabilityList = new ListView<>();
 
@@ -83,6 +82,11 @@ public class AvailableView extends BorderPane {
         }
 
         checkButton.setOnAction(e -> handleCheck());
+        checkButton.setDisable(true);
+
+        datePicker.valueProperty().addListener((obs, oldDate, newDate) -> {
+            checkButton.setDisable(newDate == null);
+        });
 
         availabilityList.getSelectionModel().selectedItemProperty().addListener(
                 (obs, oldValue, newValue) -> {
@@ -100,13 +104,7 @@ public class AvailableView extends BorderPane {
                     facilityIdLabel.setText(selectedResourceId);
 
 
-                    String building = buildingField.getValue();
 
-                    buildingLabel.setText(
-                            building == null || building.equals("All")
-                                    ? "-"
-                                    : building
-                    );
 
                     String lower = selectedFacilityName.toLowerCase();
 
@@ -177,24 +175,12 @@ public class AvailableView extends BorderPane {
         searchPane.setVgap(12);
         searchPane.setPadding(new Insets(15, 0, 15, 0));
 
-        buildingField.setPromptText("Select Building");
 
-        buildingField.getItems().addAll(
-                "All",
-                "D",
-                "E",
-                "LAB",
-                "LIB",
-                "OUT"
-        );
-
-        buildingField.getSelectionModel().selectFirst();
 
         GridPane.setHgrow(datePicker, javafx.scene.layout.Priority.ALWAYS);
-        GridPane.setHgrow(buildingField, javafx.scene.layout.Priority.ALWAYS);
+
 
         searchPane.addRow(0, new Label("Date"), datePicker);
-        searchPane.addRow(1, new Label("Building"), buildingField);
 
         checkButton.setStyle(Theme.primaryButton());
 
@@ -223,7 +209,7 @@ public class AvailableView extends BorderPane {
                         "-fx-text-fill:black;"
         );
 
-        Label empty = new Label("Select a building and date, then click Check Availability.");
+        Label empty = new Label("Select a date, then click Check Availability.");
         empty.setStyle("-fx-text-fill:" + Theme.TEXT_MUTED + ";");
         availabilityList.setPlaceholder(empty);
 
@@ -385,6 +371,7 @@ public class AvailableView extends BorderPane {
         proceedButton.setDisable(true);
         availabilityList.setDisable(true);
 
+
         statusLabel.setText("Checking availability...");
 
         worker.submit(() -> {
@@ -395,11 +382,6 @@ public class AvailableView extends BorderPane {
                 args.put("date",
                         date.format(DateTimeFormatter.ISO_LOCAL_DATE));
 
-                String building = buildingField.getValue();
-
-                if (building != null && !building.equals("All")) {
-                    args.put("building", building);
-                }
 
                 String result =
                         mcpClient.callTool("check_room_availability", args);
