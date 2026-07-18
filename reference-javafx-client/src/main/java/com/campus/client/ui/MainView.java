@@ -149,7 +149,7 @@ public class MainView {
     private void showDashboard() {
         requireLogin();
         navBar.setActive(NavBar.DASHBOARD);
-        DashboardPage page = new DashboardPage(currentUser);
+        DashboardPage page = new DashboardPage(currentUser, bookingStorage);
         page.setOnBrowseFacilities(this::showFacilities);
         page.setOnBookingHistory(this::showBookingHistory);
         page.setOnAssistant(this::showAssistant);
