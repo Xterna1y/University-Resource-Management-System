@@ -42,15 +42,23 @@ ask grounded questions (RAG) and book a room (direct tool call).
 
 See the Word guides shipped with the assignment for full explanations and architecture diagrams.
 
-```
+---
 # Campus Companion
-
+```
 Campus Companion is a JavaFX client application that connects to the supplied Campus Information MCP Server. It allows students to browse campus information, search facilities, manage bookings, and interact with an AI-powered campus assistant.
-
+```
 ---
 
-## Features
+## Group 45 Members (Section 12)
 
+| Name                           | Student ID |
+|--------------------------------|------------|
+| Fathima Ruzaiqa Mohamed Naushad | 0389780    |
+| Tan Ming Reo                   | 0381828   |
+| Jocelyn JuneCutter             | 0390131   |
+
+## Features
+```
 - Dashboard
 - Campus Assistant (RAG-powered)
 - Browse Campus Facilities
