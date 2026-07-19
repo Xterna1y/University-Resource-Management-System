@@ -6,10 +6,7 @@ import com.campus.client.ui.components.Theme;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.VBox;
-import javafx.scene.layout.HBox;
+import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
@@ -37,7 +34,7 @@ public class AvailableView extends BorderPane {
 
     private final DatePicker datePicker = new DatePicker(LocalDate.now());
     private final Button checkButton = new Button("Check Availability");
-    private final ListView<String> availabilityList = new ListView<>();
+
 
     // Facility Details
     private final Label facilityIdLabel = new Label("-");
@@ -81,53 +78,42 @@ public class AvailableView extends BorderPane {
             buildingLabel.setText("-");
         }
 
+        selectedResourceId = "AUTO";
+
+        String lower = selectedFacilityName.toLowerCase();
+
+        if (lower.contains("discussion")) {
+            facilityTypeLabel.setText("Discussion Room");
+            capacityLabel.setText("6");
+            buildingLabel.setText("Library");
+        }
+        else if (lower.contains("computer")) {
+            facilityTypeLabel.setText("Computer Lab");
+            capacityLabel.setText("30");
+            buildingLabel.setText("LAB");
+        }
+        else if (lower.contains("study")) {
+            facilityTypeLabel.setText("Study Pod");
+            capacityLabel.setText("2");
+            buildingLabel.setText("Library");
+        }
+        else if (lower.contains("basket")
+                || lower.contains("court")
+                || lower.contains("sport")) {
+            facilityTypeLabel.setText("Sports Facility");
+            capacityLabel.setText("20");
+            buildingLabel.setText("Outdoor");
+        }
+
         checkButton.setOnAction(e -> handleCheck());
         checkButton.setDisable(true);
+        proceedButton.setDisable(true);
 
         datePicker.valueProperty().addListener((obs, oldDate, newDate) -> {
             checkButton.setDisable(newDate == null);
         });
 
-        availabilityList.getSelectionModel().selectedItemProperty().addListener(
-                (obs, oldValue, newValue) -> {
 
-                    if (newValue == null) {
-                        proceedButton.setDisable(true);
-                        return;
-                    }
-
-                    // Don't allow booking unavailable resources
-                    proceedButton.setDisable(newValue.contains("🔴"));
-
-                    selectedResourceId = "AUTO";
-
-                    facilityIdLabel.setText(selectedResourceId);
-
-
-
-
-                    String lower = selectedFacilityName.toLowerCase();
-
-                    if (lower.contains("discussion")) {
-                        facilityTypeLabel.setText("Discussion Room");
-                        capacityLabel.setText("6");
-                    } else if (lower.contains("computer")) {
-                        facilityTypeLabel.setText("Computer Lab");
-                        capacityLabel.setText("30");
-                    } else if (lower.contains("study")) {
-                        facilityTypeLabel.setText("Study Pod");
-                        capacityLabel.setText("2");
-                    } else if (lower.contains("basket")
-                            || lower.contains("court")
-                            || lower.contains("sport")) {
-
-                        facilityTypeLabel.setText("Sports Facility");
-                        capacityLabel.setText("20");
-                    } else {
-                        facilityTypeLabel.setText("Facility");
-                        capacityLabel.setText("-");
-                    }
-                });
     }
 
     public void setOnProceedToBooking(BiConsumer<String, String> callback) {
@@ -192,95 +178,7 @@ public class AvailableView extends BorderPane {
         searchCard.setPadding(new Insets(20));
         searchCard.setStyle(Theme.card());
 
-        // Available Slots
 
-        Label slotsTitle = new Label("Available Time Slots");
-        slotsTitle.setStyle(
-                "-fx-font-size:14px;" +
-                        "-fx-font-weight:bold;" +
-                        "-fx-text-fill:" + Theme.DARK + ";"
-        );
-
-        availabilityList.setPrefHeight(320);
-        availabilityList.setStyle(
-                "-fx-control-inner-background:white;" +
-                        "-fx-selection-bar:#E8F0FE;" +
-                        "-fx-selection-bar-text:black;" +
-                        "-fx-text-fill:black;"
-        );
-
-        Label empty = new Label("Select a date, then click Check Availability.");
-        empty.setStyle("-fx-text-fill:" + Theme.TEXT_MUTED + ";");
-        availabilityList.setPlaceholder(empty);
-
-        availabilityList.setCellFactory(list -> new ListCell<>() {
-
-            @Override
-            protected void updateItem(String item, boolean empty) {
-
-                super.updateItem(item, empty);
-
-                if (empty || item == null) {
-                    setGraphic(null);
-                    return;
-                }
-
-                VBox card = new VBox(6);
-                card.setPadding(new Insets(12));
-                card.setStyle(
-                        "-fx-background-color:white;" +
-                                "-fx-border-color:" + Theme.GREY_BORDER + ";" +
-                                "-fx-background-radius:8;" +
-                                "-fx-border-radius:8;"
-                );
-
-                String icon = "🟢";
-                String status = "Available";
-
-                if (item.contains("🔴")) {
-                    icon = "🔴";
-                    status = "Booked";
-                }
-
-                String text = item
-                        .replace("🟢", "")
-                        .replace("🔴", "")
-                        .trim();
-
-                Label title = new Label(icon + " " + text);
-                title.setStyle(
-                        "-fx-font-weight:bold;" +
-                                "-fx-text-fill:" + Theme.DARK + ";" +
-                                "-fx-font-size:13px;"
-                );
-
-                Label statusLabel = new Label(status);
-                statusLabel.setStyle(
-                        status.equals("Available")
-                                ? Theme.statusPill(true)
-                                : Theme.statusPill(false)
-                );
-
-                card.getChildren().addAll(title, statusLabel);
-
-                setGraphic(card);
-
-                availabilityList.setStyle(
-                        "-fx-selection-bar:#E8F0FE;" +
-                                "-fx-selection-bar-text:black;" +
-                                "-fx-control-inner-background:white;"
-                );
-            }
-        });
-
-        VBox slotsCard = new VBox(10,
-                slotsTitle,
-                availabilityList);
-
-        slotsCard.setPadding(new Insets(20));
-        slotsCard.setStyle(Theme.card());
-
-        HBox.setHgrow(slotsCard, javafx.scene.layout.Priority.ALWAYS);
 
         // ================= Facility Details =================
 
@@ -306,13 +204,13 @@ public class AvailableView extends BorderPane {
 
         detailsCard.setPadding(new Insets(20));
         detailsCard.setStyle(Theme.card());
-        detailsCard.setPrefWidth(260);
+        detailsCard.setMaxWidth(Double.MAX_VALUE);
 
         // ================= Layout =================
 
-        HBox cards = new HBox(20,
-                slotsCard,
-                detailsCard);
+        HBox cards = new HBox(detailsCard);
+        HBox.setHgrow(detailsCard, Priority.ALWAYS);
+        detailsCard.setMaxWidth(Double.MAX_VALUE);
 
         VBox page = new VBox(20,
                 searchCard,
@@ -368,8 +266,7 @@ public class AvailableView extends BorderPane {
         }
 
         checkButton.setDisable(true);
-        proceedButton.setDisable(true);
-        availabilityList.setDisable(true);
+
 
 
         statusLabel.setText("Checking availability...");
@@ -388,33 +285,10 @@ public class AvailableView extends BorderPane {
 
                 Platform.runLater(() -> {
 
-                    availabilityList.getItems().clear();
-
-                    String[] lines = result.split("\\n");
-
-                    for (String line : lines) {
-
-                        line = line.trim();
-
-                        if (line.isBlank()) {
-                            continue;
-                        }
-
-                        // Ignore headings or separators from the MCP output
-                        if (line.startsWith("[")
-                                || line.startsWith("=")
-                                || line.toLowerCase().contains("available resources")) {
-                            continue;
-                        }
-
-                        availabilityList.getItems().add(line);
-                    }
-
-                    statusLabel.setText("");
+                    statusLabel.setText("Date selected. You may continue to booking.");
 
                     checkButton.setDisable(false);
-                    availabilityList.setDisable(false);
-                    proceedButton.setDisable(true);
+                    proceedButton.setDisable(false);
 
                 });
 
@@ -427,7 +301,6 @@ public class AvailableView extends BorderPane {
                                     + ex.getMessage());
 
                     checkButton.setDisable(false);
-                    availabilityList.setDisable(false);
                     proceedButton.setDisable(false);
 
                 });
@@ -439,8 +312,8 @@ public class AvailableView extends BorderPane {
 
     private void handleProceed() {
 
-        if (availabilityList.getSelectionModel().getSelectedItem() == null) {
-            statusLabel.setText("Please select an available time slot.");
+        if (datePicker.getValue() == null) {
+            statusLabel.setText("Please select a date.");
             return;
         }
 
