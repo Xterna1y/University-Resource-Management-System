@@ -88,6 +88,9 @@ public class AvailableView extends BorderPane {
             buildingLabel.setText("-");
         }
 
+        selectedFacilityName = prefillFacilityText.split("\\n")[0].trim();
+
+
         selectedResourceId = "AUTO";
 
         String lower = selectedFacilityName.toLowerCase();
