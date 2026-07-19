@@ -247,7 +247,6 @@ public class FaciView extends BorderPane {
                         "-fx-text-fill:" + Theme.DARK + ";"
         );
 
-        Label notesLabel = new Label();
         notesLabel.setWrapText(true);
         notesLabel.setStyle(
                 "-fx-text-fill:" + Theme.TEXT_MUTED + ";"

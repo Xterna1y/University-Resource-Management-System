@@ -67,12 +67,22 @@ public class AvailableView extends BorderPane {
         setCenter(buildBody());
         setBottom(buildActions());
 
+        datePicker.setDayCellFactory(picker -> new DateCell() {
+            @Override
+            public void updateItem(LocalDate date, boolean empty) {
+                super.updateItem(date, empty);
+
+                setDisable(empty || date.isBefore(LocalDate.now()));
+            }
+        });
+
         // Store the facility selected from the previous page
         if (prefillFacilityText != null && !prefillFacilityText.isBlank()) {
 
-            selectedFacilityName = prefillFacilityText.split("\\n")[0].trim();
+            String[] parts = prefillFacilityText.split("\\|");
 
-            facilityIdLabel.setText("AUTO");
+            facilityIdLabel.setText(parts[0].trim());
+            selectedFacilityName = parts[1].trim();
             facilityTypeLabel.setText("Facility");
             capacityLabel.setText("-");
             buildingLabel.setText("-");
